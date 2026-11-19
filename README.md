@@ -10,9 +10,9 @@ become clinical reports, every change is recorded in an audit trail, and
 administrators can follow model accuracy and manage users.
 
 The repository contains three services: a React web app (`frontend/`), a NestJS REST API with SQL
-Server (`api/`) and a FastAPI prediction service (`api-predictor/`), plus the notebooks that trained
-the six model checkpoints (`training/`). The checkpoints are included in `api-predictor/models/`
-(see [Model training and checkpoints](#model-training-and-checkpoints)).
+Server (`api/`) and a FastAPI prediction service (`api-predictor/`). The six model checkpoints
+and the notebooks that trained them are not included because of their size (over 600 MB
+together); see [Model training and checkpoints](#model-training-and-checkpoints).
 
 ## Contents
 
@@ -132,23 +132,21 @@ Details, diagrams and design decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE
 │   ├── uploads/                Runtime image storage (predictions/, reference/)
 │   ├── Dockerfile
 │   └── env.example
-├── api-predictor/              FastAPI prediction service
-│   ├── app/core/               Settings, API-key auth, class mapping and hierarchy
-│   ├── app/routers/            /api/v1/predict, /api/v1/health
-│   ├── app/services/           Preprocessing, patching, hybrid voting, hierarchy
-│   ├── models/                 The six trained .pt checkpoints
-│   ├── tests/                  pytest suite with fake models
-│   ├── requirements.txt, requirements-dev.txt, Dockerfile
-│   └── env.example
-└── training/                   Model training, one folder per model (01_general … 06_expert_mitotic)
-    ├── <model folder>/         Notebooks, utils/ and the Ultralytics runs/ of that model
-    └── README.md
+└── api-predictor/              FastAPI prediction service
+    ├── app/core/               Settings, API-key auth, class mapping and hierarchy
+    ├── app/routers/            /api/v1/predict, /api/v1/health
+    ├── app/services/           Preprocessing, patching, hybrid voting, hierarchy
+    ├── models/                 Where the six .pt checkpoints go (not in the repository)
+    ├── tests/                  pytest suite with fake models
+    ├── requirements.txt, requirements-dev.txt, Dockerfile
+    └── env.example
 ```
 
 ## Quick start with Docker Compose
 
 Requirements: Docker Engine with Compose v2, several gigabytes of free disk space (the SQL Server
-and PyTorch images are large), and the six model checkpoints.
+and PyTorch images are large), and the six model checkpoints copied into `api-predictor/models/`
+(they are not in the repository; see [Model training and checkpoints](#model-training-and-checkpoints)).
 
 1. **Configure.** Copy the example file and replace every `change-me` value:
 
@@ -516,12 +514,13 @@ migrations.
 
 ## Model training and checkpoints
 
-The six YOLOv8-cls checkpoints in `api-predictor/models/` were trained by the notebooks in
-`training/`, one folder per model, from the labelled images in `inputs/Classified`; the pipelines,
-the run behind each checkpoint and the training environment are in
-[training/README.md](training/README.md). File names, class order and loading rules are in
-[api-predictor/models/README.md](api-predictor/models/README.md). The class lists in
-`ModelConfig` are bound to the checkpoints' output indices and must never be reordered.
+The six YOLOv8-cls checkpoints and the notebooks that trained them are not included in this
+repository because of their size (over 600 MB together). To run the prediction service, copy the
+six `.pt` files into `api-predictor/models/` with the names listed in
+[api-predictor/models/README.md](api-predictor/models/README.md), which also documents the class
+order and the loading rules; without them the service starts but cannot classify. The class lists
+in `ModelConfig` are bound to the checkpoints' output indices and must never be reordered. No test
+needs the checkpoints (see [Testing](#testing)).
 
 ## Further documentation
 
@@ -531,5 +530,4 @@ the run behind each checkpoint and the training environment are in
   and hierarchy, result lifecycle, audit trail, authentication, report assembly, data model,
   design decisions.
 - [api-predictor/models/README.md](api-predictor/models/README.md): the model checkpoints.
-- [training/README.md](training/README.md): the model training pipelines.
 - [api/uploads/reference/README.md](api/uploads/reference/README.md): the reference image gallery.

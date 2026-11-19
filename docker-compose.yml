@@ -6,6 +6,7 @@
 #
 # Web UI: http://localhost:3000   REST API: http://localhost:8001/api/v1
 # The six model checkpoints (*.pt) in ./api-predictor/models are mounted read-only into the predictor.
+# They are not in the repository: copy them there first (see api-predictor/models/README.md).
 # Secrets come only from .env; the database and the predictor are not published on the host.
 
 name: ana-classifier

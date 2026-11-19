@@ -2,8 +2,9 @@
 
 The prediction service classifies HEp-2 indirect immunofluorescence (IIF) images with six
 YOLOv8 image-classification checkpoints (`YOLOv8-cls`, trained with Ultralytics 8.3.179 and
-loaded with Ultralytics 8.3.198). They are the trained weights of the runs in
-[`training/`](../../training/README.md), saved with exactly these names:
+loaded with Ultralytics 8.3.198). The checkpoints are not included in the repository because of
+their size (over 600 MB together with the training notebooks); copy them into this folder with
+exactly these names:
 
 ```text
 api-predictor/models/

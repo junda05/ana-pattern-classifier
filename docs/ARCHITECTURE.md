@@ -51,8 +51,8 @@ through CORS (`FRONTEND_URL`). The predictor is reachable only from the API.
 | Database | SQL Server | Persistent data; schema created by TypeORM migrations only (`synchronize` is off). |
 | Prediction service | `api-predictor/` | Image validation, preprocessing, patching, hierarchical YOLOv8 classification, hybrid voting. Stateless. |
 | Uploads | `{UPLOADS_DIR}` of the API | `predictions/`: images of saved results. `reference/`: optional reference gallery ([README](../api/uploads/reference/README.md)). |
-| Model checkpoints | `api-predictor/models/` | Six trained `.pt` files ([README](../api-predictor/models/README.md)). |
-| Model training | `training/` | Notebooks and utilities that trained the six checkpoints from the labelled images; offline, not part of the running stack ([README](../training/README.md)). |
+| Model checkpoints | `api-predictor/models/` | Six trained `.pt` files, not included in the repository because of their size; copied into the folder before running ([README](../api-predictor/models/README.md)). |
+| Model training | Not included | The notebooks that trained the six checkpoints are offline and not part of this repository or of the running stack. |
 
 ## 2. Request flow of an analysis
 
