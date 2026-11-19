@@ -1,0 +1,21 @@
+# Model checkpoints are mounted read-only at runtime (never baked into the image)
+models/*.pt
+
+# Tests and local tooling
+tests/
+requirements-dev.txt
+test_api.py
+.pytest_cache
+.ruff_cache
+**/__pycache__
+**/*.py[cod]
+*.log
+
+# Local environments and secrets
+.venv
+.env
+.env.*
+
+# Container build files
+Dockerfile
+.dockerignore

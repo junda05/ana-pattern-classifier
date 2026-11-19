@@ -1,0 +1,22 @@
+# Dependencies and build output are produced inside the image
+node_modules
+dist
+coverage
+*.tsbuildinfo
+
+# Local configuration and secrets never enter the build context
+.env
+.env.*
+
+# Runtime data (mounted as a volume) and tests
+uploads
+test
+
+# Tooling and VCS
+.git
+.vscode
+.idea
+*.log
+npm-debug.log*
+Dockerfile
+.dockerignore

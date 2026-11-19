@@ -1,0 +1,11 @@
+# Keep the build context to what `npm ci` + `npm run build` need.
+node_modules
+build
+coverage
+npm-debug.log*
+# Local environment files are never copied: the image only receives the
+# whitelisted REACT_APP_* build arguments declared in the Dockerfile.
+.env
+.env.*
+Dockerfile
+.dockerignore

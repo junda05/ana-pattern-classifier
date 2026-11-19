@@ -1,0 +1,62 @@
+# Runtime dependencies of the prediction service (Python 3.13), pinned to exact versions.
+# Install with: pip install -r requirements.txt
+
+# CPU-only PyTorch builds (no CUDA libraries): pip takes torch and torchvision from this index.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# Direct dependencies
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+python-multipart==0.0.20
+pydantic-settings==2.10.1
+ultralytics==8.3.198
+torch==2.8.0
+torchvision==0.23.0
+opencv-python==4.12.0.88
+numpy==2.2.6
+pillow==11.3.0
+
+# Pinned transitive dependencies (uvloop has no Windows build; colorama is only used on Windows)
+annotated-types==0.8.0
+anyio==4.15.1
+certifi==2026.7.22
+charset-normalizer==3.5.1
+click==8.5.0
+colorama==0.4.6; sys_platform == 'win32'
+contourpy==1.4.0
+cycler==0.12.1
+filelock==4.0.3
+fonttools==4.66.0
+fsspec==2026.9.0
+h11==0.16.0
+httptools==0.8.0
+idna==3.20
+jinja2==3.1.6
+kiwisolver==1.5.1
+markupsafe==3.0.3
+matplotlib==3.11.2
+mpmath==1.3.0
+networkx==3.7
+packaging==26.3
+polars==1.44.2
+polars-runtime-32==1.44.2
+psutil==7.2.2
+pydantic==2.13.5
+pydantic-core==2.46.5
+pyparsing==3.3.3
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.3
+pyyaml==6.0.3
+requests==2.34.2
+scipy==1.18.1
+setuptools==84.0.0
+six==1.17.0
+starlette==0.47.3
+sympy==1.14.0
+typing-extensions==4.16.0
+typing-inspection==0.4.4
+ultralytics-thop==2.1.6
+urllib3==2.8.0
+uvloop==0.22.1; sys_platform != 'win32'
+watchfiles==1.3.0
+websockets==17.1

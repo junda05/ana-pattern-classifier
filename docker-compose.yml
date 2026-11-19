@@ -1,0 +1,166 @@
+# ANA Pattern Classifier - full stack for local use and demos.
+#
+#   cp env.example .env        # then replace every change-me value
+#   docker compose up --build -d
+#   docker compose exec api node dist/scripts/create-admin-user.js
+#
+# Web UI: http://localhost:3000   REST API: http://localhost:8001/api/v1
+# The six model checkpoints (*.pt) in ./api-predictor/models are mounted read-only into the predictor.
+# Secrets come only from .env; the database and the predictor are not published on the host.
+
+name: ana-classifier
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?set MSSQL_SA_PASSWORD in .env}
+    volumes:
+      - db-data:/var/opt/mssql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - /opt/mssql-tools18/bin/sqlcmd -C -b -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1" -o /dev/null
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  # One-shot, idempotent: creates the application database and the dedicated SQL
+  # login of the API (DB_APP_USERNAME, db_owner on DB_NAME only; its password is
+  # re-synchronized from .env on every run). The API never connects as sa.
+  # The API container applies the schema (migrations) when it starts.
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?set MSSQL_SA_PASSWORD in .env}
+      DB_NAME: ${DB_NAME:-ana_classifier}
+      DB_APP_USERNAME: ${DB_APP_USERNAME:-ana_app}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?set DB_APP_PASSWORD in .env}
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        set -euo pipefail
+        for name in "$$DB_NAME" "$$DB_APP_USERNAME"; do
+          if [[ ! $$name =~ ^[A-Za-z_][A-Za-z0-9_]{0,127}$$ ]]; then
+            echo "Invalid SQL identifier: $$name" >&2
+            exit 1
+          fi
+        done
+        if [[ $${DB_APP_USERNAME,,} == sa ]]; then
+          echo "DB_APP_USERNAME must be a dedicated login, not sa" >&2
+          exit 1
+        fi
+        # Double any single quote so the password is a valid N'...' literal
+        quote="'"
+        password=$${DB_APP_PASSWORD//$$quote/$$quote$$quote}
+        sql() { /opt/mssql-tools18/bin/sqlcmd -C -b -x -S db -U sa -P "$$MSSQL_SA_PASSWORD" "$$@"; }
+        sql -Q "IF DB_ID(N'$$DB_NAME') IS NULL CREATE DATABASE [$$DB_NAME];
+          IF SUSER_ID(N'$$DB_APP_USERNAME') IS NULL
+            CREATE LOGIN [$$DB_APP_USERNAME] WITH PASSWORD = N'$$password', DEFAULT_DATABASE = [$$DB_NAME], CHECK_POLICY = ON;
+          ELSE
+            ALTER LOGIN [$$DB_APP_USERNAME] WITH PASSWORD = N'$$password';"
+        sql -d "$$DB_NAME" -Q "IF USER_ID(N'$$DB_APP_USERNAME') IS NULL
+            CREATE USER [$$DB_APP_USERNAME] FOR LOGIN [$$DB_APP_USERNAME];
+          ELSE
+            ALTER USER [$$DB_APP_USERNAME] WITH LOGIN = [$$DB_APP_USERNAME];
+          ALTER ROLE db_owner ADD MEMBER [$$DB_APP_USERNAME];"
+        echo "Database $$DB_NAME and login $$DB_APP_USERNAME are ready."
+    restart: "no"
+
+  predictor:
+    build: ./api-predictor
+    environment:
+      API_KEYS: ${PREDICTOR_API_KEY:?set PREDICTOR_API_KEY in .env}
+      DEBUG: "false"
+      ALLOWED_ORIGINS: ""
+      LOG_LEVEL: ${PREDICTOR_LOG_LEVEL:-INFO}
+    volumes:
+      - ./api-predictor/models:/app/models:ro
+    # Health check: the one declared in api-predictor/Dockerfile (/api/v1/health)
+    restart: unless-stopped
+
+  api:
+    build: ./api
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+      predictor:
+        condition: service_healthy
+    environment:
+      PORT: "8001"
+      APP_TIMEZONE: ${APP_TIMEZONE:-UTC}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:8001}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      PREDICTION_SIGNING_SECRET: ${PREDICTION_SIGNING_SECRET:?set PREDICTION_SIGNING_SECRET in .env}
+      JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-40m}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-2h}
+      PASSWORD_RESET_TOKEN_EXPIRATION: ${PASSWORD_RESET_TOKEN_EXPIRATION:-30m}
+      DB_HOST: db
+      DB_PORT: "1433"
+      # Dedicated login created by db-init (never sa)
+      DB_USERNAME: ${DB_APP_USERNAME:-ana_app}
+      DB_PASSWORD: ${DB_APP_PASSWORD:?set DB_APP_PASSWORD in .env}
+      DB_NAME: ${DB_NAME:-ana_classifier}
+      DB_ENCRYPT: ${DB_ENCRYPT:-false}
+      DB_TRUST_SERVER_CERTIFICATE: ${DB_TRUST_SERVER_CERTIFICATE:-true}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+      PREDICTOR_URL: http://predictor:8000
+      PREDICTOR_API_KEY: ${PREDICTOR_API_KEY:?set PREDICTOR_API_KEY in .env}
+      PREDICTOR_TIMEOUT_MS: ${PREDICTOR_TIMEOUT_MS:-60000}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL:-no-reply@example.com}
+      SENDGRID_FROM_NAME: ${SENDGRID_FROM_NAME:-ANA Pattern Classifier}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_FULL_NAME: ${ADMIN_FULL_NAME:-System Administrator}
+      ADMIN_PROFESSIONAL_CARD: ${ADMIN_PROFESSIONAL_CARD:-ADMIN-0001}
+      AUTH_RATE_LIMIT_WINDOW_SECONDS: ${AUTH_RATE_LIMIT_WINDOW_SECONDS:-60}
+      AUTH_RATE_LIMIT_LOGIN: ${AUTH_RATE_LIMIT_LOGIN:-10}
+      AUTH_RATE_LIMIT_REFRESH: ${AUTH_RATE_LIMIT_REFRESH:-30}
+      AUTH_RATE_LIMIT_PASSWORD_RESET: ${AUTH_RATE_LIMIT_PASSWORD_RESET:-5}
+      TRUST_PROXY: ${TRUST_PROXY:-}
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "8001:8001"
+    healthcheck:
+      # Any HTTP answer means the API is up (the profile route answers 401 without a token)
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8001/api/v1/auth/profile').then((r) => process.exit(r.status === 401 ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-http://localhost:8001/api/v1}
+        REACT_APP_LAB_NAME: ${REACT_APP_LAB_NAME:-Clinical Immunology Laboratory}
+        REACT_APP_LAB_DEPARTMENT: ${REACT_APP_LAB_DEPARTMENT:-Special Immunology}
+        REACT_APP_LAB_ADDRESS: ${REACT_APP_LAB_ADDRESS:-}
+    environment:
+      # Origin of REACT_APP_API_BASE_URL, allowed by the Content-Security-Policy
+      API_ORIGIN: ${API_ORIGIN:-http://localhost:8001}
+    ports:
+      - "3000:8080"
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  uploads:

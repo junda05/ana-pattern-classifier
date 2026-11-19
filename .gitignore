@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Builds
+dist/
+build/
+coverage/
+
+# Environment
+.env
+.env.*
+!env.example
+!.env.example
+
+# Model checkpoints and uploads
+api-predictor/models/*.pt
+api/uploads/*
+!api/uploads/reference/
+api/uploads/reference/*
+!api/uploads/reference/README.md
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

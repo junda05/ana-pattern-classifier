@@ -1,0 +1,9 @@
+{
+  "short_name": "ANA Classifier",
+  "name": "ANA Pattern Classifier",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#9A262B",
+  "background_color": "#ffffff"
+}

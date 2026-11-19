@@ -1,0 +1,179 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Design tokens as CSS custom properties. Values come from src/config/tokens.js through
+     the Tailwind theme (tailwind.config.js), so CSS files never repeat a raw colour. */
+  :root {
+    --color-brand-red: theme('colors.brand.red');
+    --color-text-secondary: theme('colors.ink.secondary');
+    --color-surface-disabled: theme('colors.surface.disabled');
+    --color-danger: theme('colors.danger.DEFAULT');
+    --shadow-form-error: theme('boxShadow.form-error');
+    --shadow-alert: theme('boxShadow.alert');
+    --shadow-alert-dark: theme('boxShadow.alert-dark');
+    --color-print-ink: theme('colors.print.ink');
+    --color-print-paper: theme('colors.print.paper');
+  }
+
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', 'Tahoma', 'Geneva', 'Verdana', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+      monospace;
+  }
+}
+
+@layer components {
+  /* Floating-label inputs: the label sits inside the field and shrinks above it on focus or when filled */
+  .form-input::placeholder {
+    color: transparent;
+  }
+
+  .form-group {
+    position: relative;
+  }
+
+  .form-label {
+    position: absolute;
+    left: 1.25rem;
+    top: 1rem;
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    background: transparent;
+    transform-origin: left top;
+  }
+
+  .form-input:focus + .form-label,
+  .form-input:not(:placeholder-shown) + .form-label {
+    top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--color-brand-red);
+    font-weight: 500;
+    transform: none;
+  }
+
+  /* Disabled fields keep the label in the raised position */
+  .form-input:disabled + .form-label,
+  .form-input[disabled] + .form-label {
+    top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    transform: none;
+  }
+
+  .form-input:disabled,
+  .form-input[disabled] {
+    background-color: var(--color-surface-disabled) !important;
+    cursor: not-allowed !important;
+    color: var(--color-text-secondary) !important;
+  }
+
+  /* Error state */
+  .form-input.border-red-500 + .form-label {
+    color: var(--color-danger);
+  }
+
+  .form-input {
+    padding-top: 1.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  .form-input.border-red-500 {
+    border-color: var(--color-danger) !important;
+  }
+
+  .form-input.border-red-500:focus {
+    border-color: var(--color-danger) !important;
+    box-shadow: var(--shadow-form-error) !important;
+  }
+
+  /* Dashboard transitions */
+  .dashboard-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar-transition {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .menu-item-transition {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(0);
+  }
+
+  .menu-item-transition:hover {
+    transform: translateX(4px);
+  }
+
+  .menu-item-transition.active {
+    transform: translateX(6px);
+  }
+}
+
+/* Printable clinical report. While the report modal is open, <body> carries
+   .report-print-active and the report is a direct child of <body> (.report-print-root):
+   printing then shows only the report, on A4, in black on white, without the app,
+   the overlay or the buttons. */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm 12mm;
+  }
+
+  body.report-print-active {
+    background: var(--color-print-paper) !important;
+  }
+
+  body.report-print-active > :not(.report-print-root) {
+    display: none !important;
+  }
+
+  .report-print-root {
+    position: static !important;
+    display: block !important;
+    padding: 0 !important;
+    background: var(--color-print-paper) !important;
+  }
+
+  .report-print-dialog {
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .report-print-dialog,
+  .report-print-dialog * {
+    color: var(--color-print-ink) !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .report-print-dialog img {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
